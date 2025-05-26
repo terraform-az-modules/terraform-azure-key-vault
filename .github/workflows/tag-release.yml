@@ -1,0 +1,13 @@
+name: Tag Release
+
+on:
+  pull_request:
+    types: [closed]
+
+jobs:
+  release:
+    uses: clouddrove/github-shared-workflows/.github/workflows/tag-release.yaml@master
+    with:
+      target_branch: master
+    secrets:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
