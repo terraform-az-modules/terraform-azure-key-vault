@@ -121,7 +121,7 @@ variable "enable_rbac_authorization" {
 
 variable "public_network_access_enabled" {
   type        = bool
-  default     = true
+  default     = false
   description = "(Optional) Whether public network access is allowed for this Key Vault. Defaults to true"
 }
 

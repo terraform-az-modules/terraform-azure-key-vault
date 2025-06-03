@@ -2,7 +2,8 @@
 # Standard Tagging Module – Applies standard tags to all resources for traceability
 ##-----------------------------------------------------------------------------
 module "labels" {
-  source          = "github.com/terraform-az-modules/terraform-azure-tags?ref=feat/labels-update"
+  source          = "terraform-az-modules/tags/azure"
+  version         = "1.0.0"
   name            = var.custom_name == "" ? var.name : var.custom_name
   location        = var.location
   environment     = var.environment
@@ -69,7 +70,6 @@ resource "azurerm_key_vault_secret" "key_vault_secret" {
   key_vault_id = azurerm_key_vault.key_vault[0].id
   name         = each.key
   value        = each.value
-
 }
 ##-----------------------------------------------------------------------------
 # key
