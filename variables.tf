@@ -50,7 +50,7 @@ variable "managedby" {
 variable "label_order" {
   type        = list(any)
   default     = ["name", "environment", "location"]
-  description = "Label order, e.g. sequence of application name and environment `name`,`environment`,'attribute' [`webserver`,`qa`,`devops`,`public`,] ."
+  description = "Order of labels in the resource name. The order of labels in the resource name. The default order is ['name', 'environment', 'location']. You can change this to ['environment', 'name', 'location'] or any other order as per your requirements."
 }
 
 variable "repository" {
@@ -103,7 +103,7 @@ variable "enabled_for_disk_encryption" {
 variable "purge_protection_enabled" {
   type        = bool
   default     = true
-  description = "Is Purge Protection enabled for this Key Vault? Defaults to false"
+  description = "Boolean flag to specify whether purge protection is enabled for the Key Vault. Defaults to true. When enabled, the Key Vault cannot be permanently deleted until the purge protection is disabled."
 }
 
 
@@ -140,18 +140,23 @@ variable "enabled_for_deployment" {
 variable "enabled_for_template_deployment" {
   type        = bool
   default     = false
-  description = " Boolean flag to specify whether Azure Resource Manager is permitted to retrieve secrets from the key vault."
+  description = "Boolean flag to specify whether Azure Resource Manager is permitted to retrieve secrets from the key vault."
 }
 
 variable "network_acls" {
-  description = "Object with attributes: `bypass`, `default_action`, `ip_rules`, `virtual_network_subnet_ids`. Set to `null` to disable. See https://www.terraform.io/docs/providers/azurerm/r/key_vault.html#bypass for more information."
   type = object({
     bypass                     = optional(string, "None"),
     default_action             = optional(string, "Deny"),
     ip_rules                   = optional(list(string)),
     virtual_network_subnet_ids = optional(list(string)),
   })
-  default = {}
+  default     = {}
+  description = <<EOT
+  Network ACLs for the Key Vault. The `bypass` attribute can be set to 'AzureServices' to allow Azure services to bypass the firewall.
+  - The `default_action` attribute can be set to 'Allow' or 'Deny',
+  - The `ip_rules` attribute is a list of IP addresses or CIDR ranges that are allowed access,
+  - the `virtual_network_subnet_ids` attribute is a list of subnet IDs that are allowed access.
+  EOT
 }
 
 variable "certificate_contacts" {
@@ -230,8 +235,9 @@ variable "subnet_id" {
 # Diagnostic Settings
 ##-----------------------------------------------------------------------------
 variable "diagnostic_setting_enable" {
-  type    = bool
-  default = false
+  type        = bool
+  default     = false
+  description = "Boolean flag to specify whether Diagnostic Settings should be enabled for the Key Vault. Defaults to false."
 }
 
 variable "storage_account_id" {
@@ -267,7 +273,7 @@ variable "log_analytics_destination_type" {
 variable "metric_enabled" {
   type        = bool
   default     = true
-  description = "the enables the diagnostic Metrics"
+  description = "Boolean flag to specify whether Metrics should be enabled for the Key Vault. Defaults to true."
 }
 
 variable "kv_logs" {
@@ -281,6 +287,7 @@ variable "kv_logs" {
     enabled        = true
     category_group = ["AllLogs"]
   }
+  description = "values for Key Vault logs. The `category` attribute is optional and can be used to specify which categories of logs to enable. If not specified, all categories will be enabled."
 }
 
 ##-----------------------------------------------------------------------------
