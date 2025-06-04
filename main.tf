@@ -15,7 +15,7 @@ module "labels" {
 }
 
 ##-----------------------------------------------------------------------------
-## Key Vault Resource -  Creates a Key Vault in the specified resource group
+# Key Vault -  Create a Key Vault in the specified resource group
 ##-----------------------------------------------------------------------------
 resource "azurerm_key_vault" "key_vault" {
   count = var.enabled ? 1 : 0
@@ -62,7 +62,7 @@ resource "azurerm_key_vault" "key_vault" {
 }
 
 ##-----------------------------------------------------------------------------
-## key vault secret resource -  Creates a Key Vault secret in the specified key vault
+# Key Vault Secrets - Create secrets in the Key Vault
 ##-----------------------------------------------------------------------------
 resource "azurerm_key_vault_secret" "key_vault_secret" {
   for_each     = var.secrets
@@ -71,7 +71,7 @@ resource "azurerm_key_vault_secret" "key_vault_secret" {
   value        = each.value
 }
 ##-----------------------------------------------------------------------------
-# key
+# Key Vault Access Policy - Create access policies for readers
 ##-----------------------------------------------------------------------------
 resource "azurerm_key_vault_access_policy" "readers_policy" {
   depends_on = [azurerm_key_vault.key_vault]
@@ -97,8 +97,11 @@ resource "azurerm_key_vault_access_policy" "readers_policy" {
   ]
 }
 
+##-----------------------------------------------------------------------------
+# Key Vault Access Policy - Create access policies for administrators
+##-----------------------------------------------------------------------------
 resource "azurerm_key_vault_access_policy" "admin_policy" {
-  depends_on = [azurerm_key_vault_access_policy.readers_policy, azurerm_key_vault.key_vault ]
+  depends_on = [azurerm_key_vault_access_policy.readers_policy, azurerm_key_vault.key_vault]
   for_each   = toset(var.enable_rbac_authorization && var.enabled && !var.managed_hardware_security_module_enabled ? [] : var.admin_objects_ids)
 
   object_id    = each.value
@@ -160,8 +163,7 @@ resource "azurerm_key_vault_access_policy" "admin_policy" {
 }
 
 ##-----------------------------------------------------------------------------
-## Below resource will provide user access on key vault based on role base access in azure environment.
-## if rbac is enabled then below resource will create. 
+# Key Vault Role Assignments - Create role assignments for RBAC
 ##-----------------------------------------------------------------------------
 resource "azurerm_role_assignment" "rbac_keyvault_administrator" {
   for_each = toset(var.enable_rbac_authorization && var.enabled && !var.managed_hardware_security_module_enabled ? var.admin_objects_ids : [])
@@ -171,6 +173,9 @@ resource "azurerm_role_assignment" "rbac_keyvault_administrator" {
   principal_id         = each.value
 }
 
+##-----------------------------------------------------------------------------
+# Key Vault Role Assignments - Create role assignments for Key Vault Secrets User
+##-----------------------------------------------------------------------------
 resource "azurerm_role_assignment" "rbac_keyvault_secrets_users" {
   for_each = toset(var.enable_rbac_authorization && var.enabled && !var.managed_hardware_security_module_enabled ? var.reader_objects_ids : [])
 
@@ -179,6 +184,10 @@ resource "azurerm_role_assignment" "rbac_keyvault_secrets_users" {
   principal_id         = each.value
 }
 
+
+##-----------------------------------------------------------------------------
+# Key Vault Role Assignments - Create role assignments for Key Vault Reader
+##-----------------------------------------------------------------------------
 resource "azurerm_role_assignment" "rbac_keyvault_reader" {
   for_each = toset(var.enable_rbac_authorization && var.enabled && !var.managed_hardware_security_module_enabled ? var.reader_objects_ids : [])
 
@@ -188,7 +197,7 @@ resource "azurerm_role_assignment" "rbac_keyvault_reader" {
 }
 
 ##-----------------------------------------------------------------------------
-##Below resource will deploy private endpoint for key vault.
+# Private Endpoint - Create a private endpoint for the Key Vault
 ##-----------------------------------------------------------------------------
 resource "azurerm_private_endpoint" "pep" {
   count = var.enabled && var.enable_private_endpoint ? 1 : 0
@@ -218,8 +227,8 @@ resource "azurerm_private_endpoint" "pep" {
   }
 }
 
-##----------------------------------------------------------------------------- 
-## Below resources will create diagnostic setting for key vault and its components. 
+##-----------------------------------------------------------------------------
+# Diagnostic Settings - Configure diagnostic settings for Key Vault
 ##-----------------------------------------------------------------------------
 resource "azurerm_monitor_diagnostic_setting" "az_monitor_diag" {
   count = var.enabled && var.diagnostic_setting_enable ? 1 : 0
@@ -250,6 +259,9 @@ resource "azurerm_monitor_diagnostic_setting" "az_monitor_diag" {
   }
 }
 
+##-----------------------------------------------------------------------------
+# Diagnostic Settings - Configure diagnostic settings for Private Endpoint Network Interface
+##-----------------------------------------------------------------------------
 resource "azurerm_monitor_diagnostic_setting" "pe_kv_nic" {
   depends_on = [azurerm_private_endpoint.pep]
   count      = var.enabled && var.diagnostic_setting_enable && var.enable_private_endpoint ? 1 : 0
@@ -273,6 +285,9 @@ resource "azurerm_monitor_diagnostic_setting" "pe_kv_nic" {
   }
 }
 
+##-----------------------------------------------------------------------------
+# Key Vault Managed Hardware Security Module - Create a Key Vault Managed HSM
+##-----------------------------------------------------------------------------
 resource "azurerm_key_vault_managed_hardware_security_module" "keyvault_hsm" {
   count = var.enabled && var.managed_hardware_security_module_enabled ? 1 : 0
 
