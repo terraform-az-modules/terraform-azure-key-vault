@@ -53,7 +53,7 @@ module "subnet" {
 
 module "log-analytics" {
   source                           = "clouddrove/log-analytics/azure"
-  version                          = "1.1.0"
+  version                          = "2.0.0"
   name                             = "app"
   environment                      = "test"
   label_order                      = ["name", "environment"]
@@ -79,9 +79,9 @@ module "private-dns-zone" {
 module "vault" {
   source                    = "../.."
   depends_on                = [module.subnet]
-  name                      = "deepanfdcc"
+  name                      = "app"
   environment               = "test"
-  label_order               = ["name", "environment", ]
+  label_order               = ["name", "environment", "location"]
   resource_group_name       = module.resource_group.resource_group_name
   location                  = module.resource_group.resource_group_location
   reader_objects_ids        = [data.azurerm_client_config.current_client_config.object_id]
