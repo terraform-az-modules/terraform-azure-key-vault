@@ -4,7 +4,7 @@
 module "labels" {
   source          = "terraform-az-modules/tags/azure"
   version         = "1.0.0"
-  name            = var.custom_name == "" ? var.name : var.custom_name
+  name            = var.custom_name == null ? var.name : var.custom_name
   location        = var.location
   environment     = var.environment
   managedby       = var.managedby
@@ -20,8 +20,7 @@ module "labels" {
 resource "azurerm_key_vault" "key_vault" {
   count = var.enabled ? 1 : 0
 
-  provider                        = azurerm.main_sub
-  name                            = format(var.resource_position_prefix ? "nsg-%s" : "%s-nsg", local.name)
+  name                            = format(var.resource_position_prefix ? "kv-%s" : "%s-kv", local.name)
   location                        = var.location
   resource_group_name             = var.resource_group_name
   enabled_for_disk_encryption     = var.enabled_for_disk_encryption
@@ -75,8 +74,8 @@ resource "azurerm_key_vault_secret" "key_vault_secret" {
 # key
 ##-----------------------------------------------------------------------------
 resource "azurerm_key_vault_access_policy" "readers_policy" {
-  provider = azurerm.main_sub
-  for_each = toset(var.enable_rbac_authorization && var.enabled && !var.managed_hardware_security_module_enabled ? [] : var.reader_objects_ids)
+  depends_on = [azurerm_key_vault.key_vault]
+  for_each   = toset(var.enable_rbac_authorization && var.enabled && !var.managed_hardware_security_module_enabled ? [] : var.reader_objects_ids)
 
   object_id    = each.value
   tenant_id    = data.azurerm_client_config.current_client_config.tenant_id
@@ -99,8 +98,8 @@ resource "azurerm_key_vault_access_policy" "readers_policy" {
 }
 
 resource "azurerm_key_vault_access_policy" "admin_policy" {
-  provider = azurerm.main_sub
-  for_each = toset(var.enable_rbac_authorization && var.enabled && !var.managed_hardware_security_module_enabled ? [] : var.admin_objects_ids)
+  depends_on = [azurerm_key_vault_access_policy.readers_policy, azurerm_key_vault.key_vault ]
+  for_each   = toset(var.enable_rbac_authorization && var.enabled && !var.managed_hardware_security_module_enabled ? [] : var.admin_objects_ids)
 
   object_id    = each.value
   tenant_id    = data.azurerm_client_config.current_client_config.tenant_id
@@ -165,7 +164,6 @@ resource "azurerm_key_vault_access_policy" "admin_policy" {
 ## if rbac is enabled then below resource will create. 
 ##-----------------------------------------------------------------------------
 resource "azurerm_role_assignment" "rbac_keyvault_administrator" {
-  provider = azurerm.main_sub
   for_each = toset(var.enable_rbac_authorization && var.enabled && !var.managed_hardware_security_module_enabled ? var.admin_objects_ids : [])
 
   scope                = azurerm_key_vault.key_vault[0].id
@@ -174,7 +172,6 @@ resource "azurerm_role_assignment" "rbac_keyvault_administrator" {
 }
 
 resource "azurerm_role_assignment" "rbac_keyvault_secrets_users" {
-  provider = azurerm.main_sub
   for_each = toset(var.enable_rbac_authorization && var.enabled && !var.managed_hardware_security_module_enabled ? var.reader_objects_ids : [])
 
   scope                = azurerm_key_vault.key_vault[0].id
@@ -183,7 +180,6 @@ resource "azurerm_role_assignment" "rbac_keyvault_secrets_users" {
 }
 
 resource "azurerm_role_assignment" "rbac_keyvault_reader" {
-  provider = azurerm.main_sub
   for_each = toset(var.enable_rbac_authorization && var.enabled && !var.managed_hardware_security_module_enabled ? var.reader_objects_ids : [])
 
   scope                = azurerm_key_vault.key_vault[0].id
@@ -195,23 +191,22 @@ resource "azurerm_role_assignment" "rbac_keyvault_reader" {
 ##Below resource will deploy private endpoint for key vault.
 ##-----------------------------------------------------------------------------
 resource "azurerm_private_endpoint" "pep" {
-  provider = azurerm.main_sub
-  count    = var.enabled && var.enable_private_endpoint ? 1 : 0
+  count = var.enabled && var.enable_private_endpoint ? 1 : 0
 
-  name                = format("%s-pe-kv", module.labels.id)
+  name                = format(var.resource_position_prefix ? "pe-kv-%s" : "%s-pe-kv", local.name)
   location            = var.location
   resource_group_name = var.resource_group_name
   subnet_id           = var.subnet_id
   tags                = module.labels.tags
 
   private_dns_zone_group {
-    name                 = format("%s-kv-dns-zone-group", module.labels.id)
+    name                 = format(var.resource_position_prefix ? "kv-dns-zone-group-%s" : "%s-kv-dns-zone-group", local.name)
     private_dns_zone_ids = [var.private_dns_zone_ids]
 
   }
 
   private_service_connection {
-    name                           = format("%s-psc-kv", module.labels.id)
+    name                           = format(var.resource_position_prefix ? "psc-kv-%s" : "%s-psc-kv", local.name)
     is_manual_connection           = false
     private_connection_resource_id = azurerm_key_vault.key_vault[0].id
     subresource_names              = ["vault"]
@@ -227,10 +222,9 @@ resource "azurerm_private_endpoint" "pep" {
 ## Below resources will create diagnostic setting for key vault and its components. 
 ##-----------------------------------------------------------------------------
 resource "azurerm_monitor_diagnostic_setting" "az_monitor_diag" {
-  provider = azurerm.main_sub
-  count    = var.enabled && var.diagnostic_setting_enable ? 1 : 0
+  count = var.enabled && var.diagnostic_setting_enable ? 1 : 0
 
-  name                           = format("%s-Key-vault-diagnostic-log", module.labels.id)
+  name                           = format(var.resource_position_prefix ? "key-vault-diagnostic-log-%s" : "%s-key-vault-diagnostic-log", local.name)
   target_resource_id             = azurerm_key_vault.key_vault[0].id
   storage_account_id             = var.storage_account_id
   eventhub_name                  = var.eventhub_name
@@ -257,13 +251,12 @@ resource "azurerm_monitor_diagnostic_setting" "az_monitor_diag" {
 }
 
 resource "azurerm_monitor_diagnostic_setting" "pe_kv_nic" {
-  provider   = azurerm.main_sub
   depends_on = [azurerm_private_endpoint.pep]
   count      = var.enabled && var.diagnostic_setting_enable && var.enable_private_endpoint ? 1 : 0
 
-  name                           = format("%s-pe-kv-nic-diagnostic-log", module.labels.id)
-  target_resource_id             = azurerm_private_endpoint.pep[count.index].network_interface[0].id
+  name                           = format(var.resource_position_prefix ? "pe-kv-nic-diagnostic-log-%s" : "%s-pe-kv-nic-diagnostic-log", local.name)
   storage_account_id             = var.storage_account_id
+  target_resource_id             = azurerm_private_endpoint.pep[count.index].network_interface[0].id
   eventhub_name                  = var.eventhub_name
   eventhub_authorization_rule_id = var.eventhub_authorization_rule_id
   log_analytics_workspace_id     = var.log_analytics_workspace_id
@@ -281,10 +274,9 @@ resource "azurerm_monitor_diagnostic_setting" "pe_kv_nic" {
 }
 
 resource "azurerm_key_vault_managed_hardware_security_module" "keyvault_hsm" {
-  provider = azurerm.main_sub
-  count    = var.enabled && var.managed_hardware_security_module_enabled ? 1 : 0
+  count = var.enabled && var.managed_hardware_security_module_enabled ? 1 : 0
 
-  name                          = format("%s-hsm-kv", module.labels.id)
+  name                          = format(var.resource_position_prefix ? "hsm-kv-%s" : "%s-hsm-kv", local.name)
   location                      = var.location
   resource_group_name           = var.resource_group_name
   sku_name                      = var.sku_name_hsm

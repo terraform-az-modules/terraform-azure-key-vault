@@ -3,7 +3,7 @@
 ##-----------------------------------------------------------------------------
 variable "custom_name" {
   type        = string
-  default     = ""
+  default     = null
   description = "Override default naming convention"
 }
 
@@ -49,13 +49,13 @@ variable "managedby" {
 
 variable "label_order" {
   type        = list(any)
-  default     = ["name", "environment"]
+  default     = ["name", "environment", "location"]
   description = "Label order, e.g. sequence of application name and environment `name`,`environment`,'attribute' [`webserver`,`qa`,`devops`,`public`,] ."
 }
 
 variable "repository" {
   type        = string
-  default     = "https://github.com/clouddrove-sandbox/azure-test-nsg.git"
+  default     = "https://github.com/terraform-az-modules/terraform-azure-key-vault"
   description = "Terraform current module repo"
 
   validation {
