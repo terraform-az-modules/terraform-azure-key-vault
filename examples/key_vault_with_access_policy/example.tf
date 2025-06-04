@@ -79,7 +79,7 @@ module "private-dns-zone" {
 #Key Vault
 module "vault" {
   source                    = "../.."
-  name                      = "annkdep"
+  name                      = "app"
   environment               = "test"
   label_order               = ["name", "environment", ]
   resource_group_name       = module.resource_group.resource_group_name
