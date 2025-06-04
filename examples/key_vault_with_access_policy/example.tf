@@ -2,11 +2,6 @@ provider "azurerm" {
   features {}
 }
 
-provider "azurerm" {
-  features {}
-  alias = "peer"
-}
-
 data "azurerm_client_config" "current_client_config" {}
 
 
@@ -42,7 +37,6 @@ module "subnet" {
   resource_group_name  = module.resource_group.resource_group_name
   location             = module.resource_group.resource_group_location
   virtual_network_name = module.vnet.vnet_name
-
 
   #subnet
   subnet_names    = ["subnet1", "subnet2"]
@@ -84,13 +78,7 @@ module "private-dns-zone" {
 
 #Key Vault
 module "vault" {
-  source = "../.."
-
-  providers = {
-    azurerm.dns_sub  = azurerm.peer, #change this to other alias if dns hosted in other subscription.
-    azurerm.main_sub = azurerm
-  }
-
+  source                    = "../.."
   name                      = "annkdep"
   environment               = "test"
   label_order               = ["name", "environment", ]
