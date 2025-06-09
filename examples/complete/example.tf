@@ -77,16 +77,17 @@ module "private-dns-zone" {
 
 #Key Vault
 module "vault" {
-  source                 = "../.."
-  depends_on             = [module.subnet]
-  name                   = "app"
-  environment            = "test"
-  label_order            = ["name", "environment", "location"]
-  resource_group_name    = module.resource_group.resource_group_name
-  location               = module.resource_group.resource_group_location
-  admin_objects_ids      = [data.azurerm_client_config.current_client_config.object_id]
-  subnet_id              = module.subnet.default_subnet_id[0]
-  enable_access_policies = false
+  source                        = "../.."
+  depends_on                    = [module.subnet]
+  name                          = "app-6"
+  environment                   = "test"
+  label_order                   = ["name", "environment", "location"]
+  resource_group_name           = module.resource_group.resource_group_name
+  location                      = module.resource_group.resource_group_location
+  admin_objects_ids             = [data.azurerm_client_config.current_client_config.object_id]
+  subnet_id                     = module.subnet.default_subnet_id[0]
+  enable_access_policies        = true
+  public_network_access_enabled = true
   access_policies = {
     "app-server" = {
       tenant_id               = data.azurerm_client_config.current_client_config.tenant_id,
@@ -102,14 +103,13 @@ module "vault" {
       key_permissions         = ["Get", "List", "Create", "Delete", "Purge", "Recover", "Backup", "Restore"]
       secret_permissions      = ["Get", "List", "Set", "Delete", "Purge", "Recover", "Backup"]
       certificate_permissions = ["Get", "List", "Create", "Delete", "Purge", "Recover"]
-      storage_permissions     = ["Get", "List"]
     },
   }
   enable_rbac_authorization = false
   network_acls = {
     bypass         = "AzureServices"
-    default_action = "Deny"
-    ip_rules       = ["1.2.3.4/32"]
+    default_action = "Allow"
+    ip_rules       = ["0.0.0.0/0"]
   }
   private_dns_zone_ids       = module.private-dns-zone.private_dns_zone_ids.key_vault
   enable_private_endpoint    = true
