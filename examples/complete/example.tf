@@ -5,8 +5,8 @@ provider "azurerm" {
 data "azurerm_client_config" "current_client_config" {}
 
 module "resource_group" {
-  source  = "clouddrove/resource-group/azure"
-  version = "1.0.2"
+  source  = "terraform-az-modules/resource-group/azure"
+  version = "1.0.0"
 
   name        = "keyapp"
   environment = "test"
@@ -77,17 +77,35 @@ module "private-dns-zone" {
 
 #Key Vault
 module "vault" {
-  source                    = "../.."
-  depends_on                = [module.subnet]
-  name                      = "app"
-  environment               = "test"
-  label_order               = ["name", "environment", "location"]
-  resource_group_name       = module.resource_group.resource_group_name
-  location                  = module.resource_group.resource_group_location
-  reader_objects_ids        = [data.azurerm_client_config.current_client_config.object_id]
-  admin_objects_ids         = [data.azurerm_client_config.current_client_config.object_id]
-  subnet_id                 = module.subnet.default_subnet_id[0]
-  enable_rbac_authorization = true
+  source                 = "../.."
+  depends_on             = [module.subnet]
+  name                   = "app"
+  environment            = "test"
+  label_order            = ["name", "environment", "location"]
+  resource_group_name    = module.resource_group.resource_group_name
+  location               = module.resource_group.resource_group_location
+  admin_objects_ids      = [data.azurerm_client_config.current_client_config.object_id]
+  subnet_id              = module.subnet.default_subnet_id[0]
+  enable_access_policies = false
+  access_policies = {
+    "app-server" = {
+      tenant_id               = data.azurerm_client_config.current_client_config.tenant_id,
+      object_id               = data.azurerm_client_config.current_client_config.object_id,
+      key_permissions         = ["Get", "List"]
+      secret_permissions      = ["Get", "List"]
+      certificate_permissions = ["Get", "List"]
+      storage_permissions     = []
+    },
+    "admin-server" = {
+      tenant_id               = data.azurerm_client_config.current_client_config.tenant_id,
+      object_id               = data.azurerm_client_config.current_client_config.object_id,
+      key_permissions         = ["Get", "List", "Create", "Delete", "Purge", "Recover", "Backup", "Restore"]
+      secret_permissions      = ["Get", "List", "Set", "Delete", "Purge", "Recover", "Backup"]
+      certificate_permissions = ["Get", "List", "Create", "Delete", "Purge", "Recover"]
+      storage_permissions     = ["Get", "List"]
+    },
+  }
+  enable_rbac_authorization = false
   network_acls = {
     bypass         = "AzureServices"
     default_action = "Deny"
