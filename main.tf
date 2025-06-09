@@ -18,8 +18,7 @@ module "labels" {
 # Key Vault -  Create a Key Vault in the specified resource group
 ##-----------------------------------------------------------------------------
 resource "azurerm_key_vault" "key_vault" {
-  count = var.enabled ? 1 : 0
-
+  count                           = var.enabled ? 1 : 0
   name                            = format(var.resource_position_prefix ? "kv-%s" : "%s-kv", local.name)
   location                        = var.location
   resource_group_name             = var.resource_group_name
@@ -33,7 +32,6 @@ resource "azurerm_key_vault" "key_vault" {
   enabled_for_deployment          = var.enabled_for_deployment
   enabled_for_template_deployment = var.enabled_for_template_deployment
   tags                            = module.labels.tags
-
   dynamic "network_acls" {
     for_each = var.network_acls == null ? [] : [var.network_acls]
     iterator = acl
@@ -44,7 +42,6 @@ resource "azurerm_key_vault" "key_vault" {
       virtual_network_subnet_ids = acl.value.virtual_network_subnet_ids
     }
   }
-
   dynamic "contact" {
     for_each = var.certificate_contacts
     content {
@@ -54,6 +51,20 @@ resource "azurerm_key_vault" "key_vault" {
     }
   }
 
+
+  dynamic "access_policy" {
+    for_each = var.enable_access_policies ? var.access_policies : {}
+
+    content {
+      tenant_id               = access_policy.value.tenant_id != null ? access_policy.value.tenant_id : data.azurerm_client_config.current_client_config.tenant_id
+      object_id               = access_policy.value.object_id
+      application_id          = access_policy.value.application_id
+      key_permissions         = access_policy.value.key_permissions
+      secret_permissions      = access_policy.value.secret_permissions
+      certificate_permissions = access_policy.value.certificate_permissions
+      storage_permissions     = access_policy.value.storage_permissions
+    }
+  }
   lifecycle {
     ignore_changes = [
       tags,
@@ -64,154 +75,29 @@ resource "azurerm_key_vault" "key_vault" {
 ##-----------------------------------------------------------------------------
 # Key Vault Secrets - Create secrets in the Key Vault
 ##-----------------------------------------------------------------------------
-resource "azurerm_key_vault_secret" "key_vault_secret" {
-  for_each     = var.secrets
-  key_vault_id = azurerm_key_vault.key_vault[0].id
-  name         = each.key
-  value        = each.value
-}
-##-----------------------------------------------------------------------------
-# Key Vault Access Policy - Create access policies for readers
-##-----------------------------------------------------------------------------
-resource "azurerm_key_vault_access_policy" "readers_policy" {
-  depends_on = [azurerm_key_vault.key_vault]
-  for_each   = toset(var.enable_rbac_authorization && var.enabled && !var.managed_hardware_security_module_enabled ? [] : var.reader_objects_ids)
-
-  object_id    = each.value
-  tenant_id    = data.azurerm_client_config.current_client_config.tenant_id
-  key_vault_id = azurerm_key_vault.key_vault[0].id
-
-  key_permissions = [
-    "Get",
-    "List",
-  ]
-
-  secret_permissions = [
-    "Get",
-    "List",
-  ]
-
-  certificate_permissions = [
-    "Get",
-    "List",
-  ]
-}
-
-##-----------------------------------------------------------------------------
-# Key Vault Access Policy - Create access policies for administrators
-##-----------------------------------------------------------------------------
-resource "azurerm_key_vault_access_policy" "admin_policy" {
-  depends_on = [azurerm_key_vault_access_policy.readers_policy, azurerm_key_vault.key_vault]
-  for_each   = toset(var.enable_rbac_authorization && var.enabled && !var.managed_hardware_security_module_enabled ? [] : var.admin_objects_ids)
-
-  object_id    = each.value
-  tenant_id    = data.azurerm_client_config.current_client_config.tenant_id
-  key_vault_id = azurerm_key_vault.key_vault[0].id
-
-  key_permissions = [
-    "Backup",
-    "Create",
-    "Decrypt",
-    "Delete",
-    "Encrypt",
-    "Get",
-    "Import",
-    "List",
-    "Purge",
-    "Recover",
-    "Restore",
-    "Sign",
-    "UnwrapKey",
-    "Update",
-    "Verify",
-    "WrapKey",
-    "Rotate",
-    "GetRotationPolicy",
-    "SetRotationPolicy",
-    "Release"
-  ]
-
-  secret_permissions = [
-    "Backup",
-    "Delete",
-    "Get",
-    "List",
-    "Purge",
-    "Recover",
-    "Restore",
-    "Set",
-  ]
-
-  certificate_permissions = [
-    "Backup",
-    "Create",
-    "Delete",
-    "DeleteIssuers",
-    "Get",
-    "GetIssuers",
-    "Import",
-    "List",
-    "ListIssuers",
-    "ManageContacts",
-    "ManageIssuers",
-    "Purge",
-    "Recover",
-    "Restore",
-    "SetIssuers",
-    "Update",
-  ]
-}
-
-##-----------------------------------------------------------------------------
-# Key Vault Role Assignments - Create role assignments for RBAC
-##-----------------------------------------------------------------------------
-resource "azurerm_role_assignment" "rbac_keyvault_administrator" {
-  for_each = toset(var.enable_rbac_authorization && var.enabled && !var.managed_hardware_security_module_enabled ? var.admin_objects_ids : [])
-
-  scope                = azurerm_key_vault.key_vault[0].id
-  role_definition_name = "Key Vault Administrator"
-  principal_id         = each.value
-}
-
-##-----------------------------------------------------------------------------
-# Key Vault Role Assignments - Create role assignments for Key Vault Secrets User
-##-----------------------------------------------------------------------------
-resource "azurerm_role_assignment" "rbac_keyvault_secrets_users" {
-  for_each = toset(var.enable_rbac_authorization && var.enabled && !var.managed_hardware_security_module_enabled ? var.reader_objects_ids : [])
-
-  scope                = azurerm_key_vault.key_vault[0].id
-  role_definition_name = "Key Vault Secrets User"
-  principal_id         = each.value
-}
-
-
-##-----------------------------------------------------------------------------
-# Key Vault Role Assignments - Create role assignments for Key Vault Reader
-##-----------------------------------------------------------------------------
-resource "azurerm_role_assignment" "rbac_keyvault_reader" {
-  for_each = toset(var.enable_rbac_authorization && var.enabled && !var.managed_hardware_security_module_enabled ? var.reader_objects_ids : [])
-
-  scope                = azurerm_key_vault.key_vault[0].id
-  role_definition_name = "Key Vault Reader"
-  principal_id         = each.value
+resource "azurerm_key_vault_secret" "secrets" {
+  for_each        = { for secret in var.secrets : secret.name => secret }
+  key_vault_id    = azurerm_key_vault.kv.id
+  name            = each.value.name
+  value           = each.value.value
+  content_type    = each.value.content_type
+  not_before_date = each.value.not_before_date
+  expiration_date = each.value.expiration_date
 }
 
 ##-----------------------------------------------------------------------------
 # Private Endpoint - Create a private endpoint for the Key Vault
 ##-----------------------------------------------------------------------------
 resource "azurerm_private_endpoint" "pep" {
-  count = var.enabled && var.enable_private_endpoint ? 1 : 0
-
+  count               = var.enabled && var.enable_private_endpoint ? 1 : 0
   name                = format(var.resource_position_prefix ? "pe-kv-%s" : "%s-pe-kv", local.name)
   location            = var.location
   resource_group_name = var.resource_group_name
   subnet_id           = var.subnet_id
   tags                = module.labels.tags
-
   private_dns_zone_group {
     name                 = format(var.resource_position_prefix ? "kv-dns-zone-group-%s" : "%s-kv-dns-zone-group", local.name)
     private_dns_zone_ids = [var.private_dns_zone_ids]
-
   }
 
   private_service_connection {
@@ -231,8 +117,7 @@ resource "azurerm_private_endpoint" "pep" {
 # Diagnostic Settings - Configure diagnostic settings for Key Vault
 ##-----------------------------------------------------------------------------
 resource "azurerm_monitor_diagnostic_setting" "az_monitor_diag" {
-  count = var.enabled && var.diagnostic_setting_enable ? 1 : 0
-
+  count                          = var.enabled && var.diagnostic_setting_enable ? 1 : 0
   name                           = format(var.resource_position_prefix ? "key-vault-diagnostic-log-%s" : "%s-key-vault-diagnostic-log", local.name)
   target_resource_id             = azurerm_key_vault.key_vault[0].id
   storage_account_id             = var.storage_account_id
