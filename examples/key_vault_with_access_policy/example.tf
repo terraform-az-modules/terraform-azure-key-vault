@@ -91,7 +91,7 @@ module "vault" {
   network_acls = {
     bypass         = "AzureServices"
     default_action = "Deny"
-    ip_rules       = ["1.2.3.4/32"]
+    ip_rules       = ["0.0.0.0/0"]
   }
 
   reader_objects_ids = {
@@ -104,6 +104,15 @@ module "vault" {
       principal_id         = data.azurerm_client_config.current_client_config.object_id
     }
   }
+   secrets = [
+    {
+      name            = "api-key"
+      value           = "1234567890abcdef"
+      content_type    = "text/plain"
+      not_before_date = null
+      expiration_date = null
+    }
+  ]
   enable_access_policies     = false
   enable_private_endpoint    = true
   diagnostic_setting_enable  = true
