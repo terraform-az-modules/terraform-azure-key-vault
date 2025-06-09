@@ -76,8 +76,9 @@ resource "azurerm_key_vault" "key_vault" {
 # Key Vault Secrets - Create secrets in the Key Vault
 ##-----------------------------------------------------------------------------
 resource "azurerm_key_vault_secret" "secrets" {
+  depends_on      = [azurerm_role_assignment.rbac_keyvault_administrator]
   for_each        = { for secret in var.secrets : secret.name => secret }
-  key_vault_id    = azurerm_key_vault.kv.id
+  key_vault_id    = azurerm_key_vault.key_vault[0].id
   name            = each.value.name
   value           = each.value.value
   content_type    = each.value.content_type
@@ -117,6 +118,7 @@ resource "azurerm_private_endpoint" "pep" {
 # Diagnostic Settings - Configure diagnostic settings for Key Vault
 ##-----------------------------------------------------------------------------
 resource "azurerm_monitor_diagnostic_setting" "az_monitor_diag" {
+  depends_on                     = [azurerm_key_vault.key_vault]
   count                          = var.enabled && var.diagnostic_setting_enable ? 1 : 0
   name                           = format(var.resource_position_prefix ? "key-vault-diagnostic-log-%s" : "%s-key-vault-diagnostic-log", local.name)
   target_resource_id             = azurerm_key_vault.key_vault[0].id
@@ -125,11 +127,10 @@ resource "azurerm_monitor_diagnostic_setting" "az_monitor_diag" {
   eventhub_authorization_rule_id = var.eventhub_authorization_rule_id
   log_analytics_workspace_id     = var.log_analytics_workspace_id
   log_analytics_destination_type = var.log_analytics_destination_type
-  dynamic "metric" {
+  dynamic "enabled_metric" {
     for_each = var.metric_enabled ? ["AllMetrics"] : []
     content {
-      category = metric.value
-      enabled  = true
+      category = enabled_metric.value
     }
   }
   dynamic "enabled_log" {
@@ -148,7 +149,7 @@ resource "azurerm_monitor_diagnostic_setting" "az_monitor_diag" {
 # Diagnostic Settings - Configure diagnostic settings for Private Endpoint Network Interface
 ##-----------------------------------------------------------------------------
 resource "azurerm_monitor_diagnostic_setting" "pe_kv_nic" {
-  depends_on = [azurerm_private_endpoint.pep]
+  depends_on = [azurerm_private_endpoint.pep, azurerm_key_vault.key_vault]
   count      = var.enabled && var.diagnostic_setting_enable && var.enable_private_endpoint ? 1 : 0
 
   name                           = format(var.resource_position_prefix ? "pe-kv-nic-diagnostic-log-%s" : "%s-pe-kv-nic-diagnostic-log", local.name)
