@@ -169,6 +169,33 @@ variable "certificate_contacts" {
   description = "Contact information to send notifications triggered by certificate lifetime events"
 }
 
+variable "enable_access_policies" {
+  type        = bool
+  default     = true
+  description = "Boolean flag to specify whether access policies should be enabled for the Key Vault. Defaults to true."
+
+}
+variable "access_policies" {
+  type = map(object({
+    tenant_id               = string
+    object_id               = string
+    application_id          = optional(string, null)
+    key_permissions         = optional(list(string), [])
+    secret_permissions      = optional(list(string), [])
+    certificate_permissions = optional(list(string), [])
+    storage_permissions     = optional(list(string), [])
+  }))
+  default     = {}
+  description = "List of access policies to be applied to the Key Vault. Each policy can specify permissions for keys, secrets, certificates, and storage."
+
+}
+variable "tenant_id" {
+  type        = string
+  default     = ""
+  description = "The tenant ID in which the Key Vault should be created. Changing this forces a new resource to be created."
+
+}
+
 ##-----------------------------------------------------------------------------
 ## key Vault Secrets
 ##-----------------------------------------------------------------------------
@@ -189,8 +216,11 @@ variable "managed_hardware_security_module_enabled" {
 
 variable "reader_objects_ids" {
   description = "IDs of the objects that can read all keys, secrets and certificates."
-  type        = list(string)
-  default     = []
+  type = map(object({
+    role_definition_name = string
+    principal_id         = string
+  }))
+  default = {}
 }
 
 variable "admin_objects_ids" {
