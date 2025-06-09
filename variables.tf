@@ -200,9 +200,15 @@ variable "tenant_id" {
 ## key Vault Secrets
 ##-----------------------------------------------------------------------------
 variable "secrets" {
-  type        = map(string)
-  description = "Map of secrets to be stored in the Key Vault"
-  default     = {}
+  type = list(object({
+    name            = string
+    value           = string
+    content_type    = optional(string)
+    not_before_date = optional(string)
+    expiration_date = optional(string)
+  }))
+  default     = []
+  description = "List of objects that represent the configuration of each secrect."
 }
 
 ##-----------------------------------------------------------------------------
