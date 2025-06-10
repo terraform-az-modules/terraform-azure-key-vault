@@ -187,13 +187,6 @@ variable "access_policies" {
   }))
   default     = {}
   description = "List of access policies to be applied to the Key Vault. Each policy can specify permissions for keys, secrets, certificates, and storage."
-
-}
-variable "tenant_id" {
-  type        = string
-  default     = ""
-  description = "The tenant ID in which the Key Vault should be created. Changing this forces a new resource to be created."
-
 }
 
 ##-----------------------------------------------------------------------------
