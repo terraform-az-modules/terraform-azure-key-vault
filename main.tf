@@ -83,7 +83,7 @@ resource "azurerm_key_vault_secret" "secrets" {
   value           = each.value.value
   content_type    = each.value.content_type
   not_before_date = each.value.not_before_date
-  expiration_date = each.value.expiration_date
+  expiration_date = each.value.expiration_date != null ? each.value.expiration_date : "2034-10-22T18:29:59Z"
 }
 
 ##-----------------------------------------------------------------------------
