@@ -4,5 +4,6 @@ output "id" {
 }
 
 output "vault_uri" {
-  value = module.vault[*].vault_uri
+  value       = module.vault[*].vault_uri
+  description = "value of the Key Vault URI."
 }

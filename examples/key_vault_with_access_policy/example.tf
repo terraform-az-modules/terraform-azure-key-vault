@@ -78,16 +78,17 @@ module "private-dns-zone" {
 
 #Key Vault
 module "vault" {
-  source                    = "../.."
-  name                      = "app"
-  environment               = "test"
-  label_order               = ["name", "environment", "location"]
-  resource_group_name       = module.resource_group.resource_group_name
-  location                  = module.resource_group.resource_group_location                # for access policy only use reader or admin
-  admin_objects_ids         = [data.azurerm_client_config.current_client_config.object_id] # for access policy only use reader or admin
-  subnet_id                 = module.subnet.default_subnet_id[0]
-  enable_rbac_authorization = true
-  private_dns_zone_ids      = module.private-dns-zone.private_dns_zone_ids.key_vault
+  source                        = "../.."
+  name                          = "app"
+  environment                   = "test"
+  label_order                   = ["name", "environment", "location"]
+  resource_group_name           = module.resource_group.resource_group_name
+  location                      = module.resource_group.resource_group_location                # for access policy only use reader or admin
+  admin_objects_ids             = [data.azurerm_client_config.current_client_config.object_id] # for access policy only use reader or admin
+  subnet_id                     = module.subnet.default_subnet_id[0]
+  enable_rbac_authorization     = true
+  private_dns_zone_ids          = module.private-dns-zone.private_dns_zone_ids.key_vault
+  public_network_access_enabled = true
   network_acls = {
     bypass         = "AzureServices"
     default_action = "Deny"
@@ -104,7 +105,7 @@ module "vault" {
       principal_id         = data.azurerm_client_config.current_client_config.object_id
     }
   }
-   secrets = [
+  secrets = [
     {
       name            = "api-key"
       value           = "1234567890abcdef"
