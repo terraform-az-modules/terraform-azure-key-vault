@@ -51,10 +51,8 @@ resource "azurerm_key_vault" "key_vault" {
     }
   }
 
-
   dynamic "access_policy" {
     for_each = var.enable_access_policies ? var.access_policies : {}
-
     content {
       tenant_id               = access_policy.value.tenant_id != null ? access_policy.value.tenant_id : data.azurerm_client_config.current_client_config.tenant_id
       object_id               = access_policy.value.object_id
@@ -100,7 +98,6 @@ resource "azurerm_private_endpoint" "pep" {
     name                 = format(var.resource_position_prefix ? "kv-dns-zone-group-%s" : "%s-kv-dns-zone-group", local.name)
     private_dns_zone_ids = [var.private_dns_zone_ids]
   }
-
   private_service_connection {
     name                           = format(var.resource_position_prefix ? "psc-kv-%s" : "%s-psc-kv", local.name)
     is_manual_connection           = false
@@ -149,9 +146,8 @@ resource "azurerm_monitor_diagnostic_setting" "az_monitor_diag" {
 # Diagnostic Settings - Configure diagnostic settings for Private Endpoint Network Interface
 ##-----------------------------------------------------------------------------
 resource "azurerm_monitor_diagnostic_setting" "pe_kv_nic" {
-  depends_on = [azurerm_private_endpoint.pep, azurerm_key_vault.key_vault]
-  count      = var.enabled && var.diagnostic_setting_enable && var.enable_private_endpoint ? 1 : 0
-
+  depends_on                     = [azurerm_private_endpoint.pep, azurerm_key_vault.key_vault]
+  count                          = var.enabled && var.diagnostic_setting_enable && var.enable_private_endpoint ? 1 : 0
   name                           = format(var.resource_position_prefix ? "pe-kv-nic-diagnostic-log-%s" : "%s-pe-kv-nic-diagnostic-log", local.name)
   storage_account_id             = var.storage_account_id
   target_resource_id             = azurerm_private_endpoint.pep[count.index].network_interface[0].id
@@ -175,8 +171,7 @@ resource "azurerm_monitor_diagnostic_setting" "pe_kv_nic" {
 # Key Vault Managed Hardware Security Module - Create a Key Vault Managed HSM
 ##-----------------------------------------------------------------------------
 resource "azurerm_key_vault_managed_hardware_security_module" "keyvault_hsm" {
-  count = var.enabled && var.managed_hardware_security_module_enabled ? 1 : 0
-
+  count                         = var.enabled && var.managed_hardware_security_module_enabled ? 1 : 0
   name                          = format(var.resource_position_prefix ? "hsm-kv-%s" : "%s-hsm-kv", local.name)
   location                      = var.location
   resource_group_name           = var.resource_group_name
