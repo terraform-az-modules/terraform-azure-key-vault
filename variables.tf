@@ -88,6 +88,7 @@ variable "enabled" {
 
 variable "resource_group_name" {
   type        = string
+  default     = ""
   description = "The name of the resource group in which to create the network security group."
 }
 
