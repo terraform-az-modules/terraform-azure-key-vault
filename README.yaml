@@ -5,13 +5,13 @@
 #
 
 # Name of this project
-name : Terraform Azure Module Template
+name : Terraform Azure key vault
 
 # License of this project
 license: "APACHE"
 
 # Canonical GitHub repo
-github_repo: terraform-az-modules/terraform-module-template
+github_repo: terraform-az-modules/terraform-module-azure-key-vault
 
 # Badges to display
 badges:
@@ -38,12 +38,58 @@ providers:
 
 #  description of this project
 description: |-
-  Terraform Azure Module Template to create new modules using this as baseline
+  Terraform Azure Key Vault module to create new resource in Azure
 
 # How to use this project
-# How to use this project
 usage: |-
-  Here are some examples of how you can use this module in your inventory structure:
+  ### Simple Example
+  Here is an example of how you can use this module in your inventory structure:
+    #### key-vault with access policy
   ```hcl
-    locals {}
+   module "key_vault" {
+   source                    = "clouddrove/key-vault/azure"
+   name                      = "anfdcc"
+   environment               = "test"
+   label_order               = ["name", "environment", ]
+   resource_group_name       = "*****"
+   location                  = "*****"
+   admin_objects_ids         = [data.azurerm_client_config.current_client_config.object_id]
+   virtual_network_id        = "*****"
+   subnet_id                 = "*****"
+   enable_rbac_authorization = false
+   network_acls              = {
+    bypass                   = "AzureServices"
+    default_action           = "Deny"
+    ip_rules                 = ["1.2.3.4/32"]
+    }
+   #private endpoint
+   enable_private_endpoint   = false
+   diagnostic_setting_enable = false
+   }
+  ```
+  #### key-vault with RBAC
+  ```hcl
+   module "key_vault" {
+   source                    = "clouddrove/key-vault/azure"
+   name                      = "anfdcc"
+   environment               = "test"
+   label_order               = ["name", "environment", ]
+   resource_group_name       = "*****"
+   location                  = "*****"
+   reader_objects_ids        = [data.azurerm_client_config.current_client_config.object_id]
+   admin_objects_ids         = [data.azurerm_client_config.current_client_config.object_id]
+   virtual_network_id        = "*****"
+   subnet_id                 = "*****"
+   enable_rbac_authorization = true
+   network_acls              = {
+    bypass                   = "AzureServices"
+    default_action           = "Deny"
+    ip_rules                 = ["1.2.3.4/32"]
+    }
+   #private endpoint
+   enable_private_endpoint   = false
+   diagnostic_setting_enable = false
+   }
+  ```
+
     ```

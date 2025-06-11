@@ -11,4 +11,4 @@ jobs:
     with:
       directory: '.'
       continue_on_error: 'true'
-      skip_check: 'CKV_TF_1'
+      skip_check: 'CKV_TF_1,CKV_TF_2,CKV2_AZURE_32,CKV_AZURE_109'

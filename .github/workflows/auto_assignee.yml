@@ -9,7 +9,7 @@ jobs:
   assignee:
     uses: clouddrove/github-shared-workflows/.github/workflows/auto_assignee.yml@master
     secrets:
-      GITHUB: ${{ secrets.GITHUB }}
+      GITHUB: ${{ secrets.GITHUB_TOKEN }}
     with:
       assignees: 'clouddrove-ci'
       reviewers: '@terraform-az-modules/crew'

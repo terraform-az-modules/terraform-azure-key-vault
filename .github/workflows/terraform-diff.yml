@@ -3,8 +3,6 @@ on:
   pull_request:
     branches:
       - master
-    paths:
-      - 'examples/complete/**'
 
 jobs:
 # Update 'Job name' and 'terraform_directory' as needed based on the module structure.
@@ -13,6 +11,16 @@ jobs:
     with:
       provider: 'azurerm'
       terraform_directory: 'examples/complete'
+      target_branch: 'master'
+    secrets:
+      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+  
+  key-vault-with-access-policy-example:
+    uses: clouddrove/github-shared-workflows/.github/workflows/tf-pr-checks.yaml@master
+    with:
+      provider: 'azurerm'
+      terraform_directory: 'examples/key_vault_with_access_policy'
       target_branch: 'master'
     secrets:
       AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}

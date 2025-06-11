@@ -7,7 +7,7 @@ data "azurerm_client_config" "current_client_config" {}
 module "resource_group" {
   source      = "terraform-az-modules/resource-group/azure"
   version     = "1.0.0"
-  name        = "keyapp"
+  name        = "app"
   environment = "test"
   label_order = ["environment", "name", ]
   location    = "Canada Central"
@@ -73,29 +73,33 @@ module "private-dns-zone" {
 #Key Vault
 module "vault" {
   source                        = "../.."
-  depends_on                    = [module.subnet]
   name                          = "app"
   environment                   = "test"
   label_order                   = ["name", "environment", "location"]
   resource_group_name           = module.resource_group.resource_group_name
-  location                      = module.resource_group.resource_group_location
+  location                      = module.resource_group.resource_group_location # for access policy only use reader or admin
   subnet_id                     = module.subnet.default_subnet_id[0]
-  enable_access_policies        = true
+  enable_rbac_authorization     = false
+  private_dns_zone_ids          = module.private-dns-zone.private_dns_zone_ids.key_vault
   public_network_access_enabled = true
-  admin_objects_ids             = [data.azurerm_client_config.current_client_config.object_id]
-  reader_objects_ids = {
-    "Key Vault Read User" = {
-      role_definition_name = "Key Vault Reader"
-      principal_id         = data.azurerm_client_config.current_client_config.object_id
+  enable_access_policies        = true
+  access_policies = {
+    "app-server" = {
+      tenant_id               = data.azurerm_client_config.current_client_config.tenant_id,
+      object_id               = data.azurerm_client_config.current_client_config.object_id,
+      key_permissions         = ["Get", "List"]
+      secret_permissions      = ["Get", "List"]
+      certificate_permissions = ["Get", "List"]
+      storage_permissions     = []
     },
-    "Key Vault Secret User" = {
-      role_definition_name = "Key Vault Secrets User"
-      principal_id         = data.azurerm_client_config.current_client_config.object_id
-    }
+    "admin-server" = {
+      tenant_id               = data.azurerm_client_config.current_client_config.tenant_id,
+      object_id               = data.azurerm_client_config.current_client_config.object_id,
+      key_permissions         = ["Get", "List", "Create", "Delete", "Purge", "Recover", "Backup", "Restore"]
+      secret_permissions      = ["Get", "List", "Set", "Delete", "Purge", "Recover", "Backup"]
+      certificate_permissions = ["Get", "List", "Create", "Delete", "Purge", "Recover"]
+    },
   }
-  private_dns_zone_ids       = module.private-dns-zone.private_dns_zone_ids.key_vault
   diagnostic_setting_enable  = true
-  log_analytics_workspace_id = module.log-analytics.workspace_id ## when diagnostic_setting_enable enable,  add log analytics workspace id
+  log_analytics_workspace_id = module.log-analytics.workspace_id ## when diagnostic_setting_enable enable,add log analytics workspace id
 }
-
-
