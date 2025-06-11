@@ -60,7 +60,7 @@ module "log-analytics" {
 }
 
 module "private-dns-zone" {
-  source              = "git::git@github.com:terraform-az-modules/terraform-azure-private-dns.git?ref=feat/beta"
+  source              = "git@github.com:terraform-az-modules/terraform-azure-private-dns.git?ref=feat/beta"
   resource_group_name = module.resource_group.resource_group_name
   private_dns_config = [
     {
