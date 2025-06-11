@@ -150,7 +150,12 @@ variable "network_acls" {
     ip_rules                   = optional(list(string)),
     virtual_network_subnet_ids = optional(list(string)),
   })
-  default     = {}
+  default = {
+    bypass                     = "AzureServices"
+    default_action             = "Allow"
+    ip_rules                   = ["0.0.0.0/0"]
+    virtual_network_subnet_ids = []
+  }
   description = <<EOT
   Network ACLs for the Key Vault. The `bypass` attribute can be set to 'AzureServices' to allow Azure services to bypass the firewall.
   - The `default_action` attribute can be set to 'Allow' or 'Deny',
