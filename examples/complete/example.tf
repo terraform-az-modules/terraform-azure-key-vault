@@ -80,7 +80,6 @@ module "vault" {
   resource_group_name           = module.resource_group.resource_group_name
   location                      = module.resource_group.resource_group_location
   subnet_id                     = module.subnet.default_subnet_id[0]
-  enable_access_policies        = true
   public_network_access_enabled = true
   admin_objects_ids             = [data.azurerm_client_config.current_client_config.object_id]
   reader_objects_ids = {
