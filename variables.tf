@@ -171,7 +171,7 @@ variable "certificate_contacts" {
 
 variable "enable_access_policies" {
   type        = bool
-  default     = true
+  default     = false
   description = "Boolean flag to specify whether access policies should be enabled for the Key Vault. Defaults to true."
 
 }
