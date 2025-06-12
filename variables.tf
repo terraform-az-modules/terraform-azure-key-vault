@@ -243,23 +243,12 @@ variable "enable_private_endpoint" {
   description = "Manages a Private Endpoint to Azure database for MySQL"
 }
 
-variable "existing_private_dns_zone" {
-  type        = string
-  default     = null
-  description = "Name of the existing private DNS zone"
-}
-
-variable "existing_private_dns_zone_id" {
-  description = "The ID of an existing private DNS zone."
-  type        = string
-  default     = null
-}
-
 variable "private_dns_zone_ids" {
   type        = string
   default     = null
   description = "The ID of the private DNS zone."
 }
+
 variable "subnet_id" {
   type        = string
   default     = ""
