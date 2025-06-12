@@ -84,7 +84,7 @@ module "vault" {
   environment                   = "test"
   label_order                   = ["name", "environment", "location"]
   resource_group_name           = module.resource_group.resource_group_name
-  location                      = module.resource_group.resource_group_location 
+  location                      = module.resource_group.resource_group_location
   subnet_id                     = module.subnet.subnet_ids["subnet1"]
   enable_rbac_authorization     = false
   private_dns_zone_ids          = module.private-dns-zone.private_dns_zone_ids.key_vault
