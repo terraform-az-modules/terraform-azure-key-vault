@@ -14,34 +14,41 @@ module "resource_group" {
 }
 
 module "vnet" {
-  source              = "clouddrove/vnet/azure"
-  version             = "1.0.4"
+  source              = "terraform-az-modules/vnet/azure"
+  version             = "1.0.0"
   name                = "app"
   environment         = "test"
   label_order         = ["name", "environment"]
   resource_group_name = module.resource_group.resource_group_name
   location            = module.resource_group.resource_group_location
-  address_spaces      = ["10.30.0.0/16"]
+  address_spaces      = ["10.0.0.0/16"]
 }
 
 module "subnet" {
-  source               = "clouddrove/subnet/azure"
-  version              = "1.2.1"
-  name                 = "app"
+  source               = "terraform-az-modules/subnet/azure"
+  version              = "1.0.0"
   environment          = "test"
-  label_order          = ["name", "environment"]
+  label_order          = ["name", "environment", ]
   resource_group_name  = module.resource_group.resource_group_name
   location             = module.resource_group.resource_group_location
   virtual_network_name = module.vnet.vnet_name
-  #subnet
-  subnet_names    = ["subnet1", "subnet2"]
-  subnet_prefixes = ["10.30.1.0/24", "10.30.2.0/24"]
-  # route_table
-  routes = [
+  subnets = [
     {
-      name           = "rt-test"
-      address_prefix = "0.0.0.0/0"
-      next_hop_type  = "Internet"
+      name            = "subnet1"
+      subnet_prefixes = ["10.0.1.0/24"]
+    }
+  ]
+  enable_route_table = true
+  route_tables = [
+    {
+      name = "route-table"
+      routes = [
+        {
+          name           = "route-table"
+          address_prefix = "0.0.0.0/0"
+          next_hop_type  = "Internet"
+        }
+      ]
     }
   ]
 }
@@ -77,8 +84,8 @@ module "vault" {
   environment                   = "test"
   label_order                   = ["name", "environment", "location"]
   resource_group_name           = module.resource_group.resource_group_name
-  location                      = module.resource_group.resource_group_location # for access policy only use reader or admin
-  subnet_id                     = module.subnet.default_subnet_id[0]
+  location                      = module.resource_group.resource_group_location
+  subnet_id                     = module.subnet.subnet_ids["subnet1"]
   enable_rbac_authorization     = false
   private_dns_zone_ids          = module.private-dns-zone.private_dns_zone_ids.key_vault
   public_network_access_enabled = true
@@ -101,5 +108,5 @@ module "vault" {
     },
   }
   diagnostic_setting_enable  = true
-  log_analytics_workspace_id = module.log-analytics.workspace_id ## when diagnostic_setting_enable enable,add log analytics workspace id
+  log_analytics_workspace_id = module.log-analytics.workspace_id
 }
